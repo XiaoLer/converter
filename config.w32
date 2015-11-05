@@ -1,0 +1,13 @@
+// $Id$
+// vim:ft=javascript
+
+// If your extension references something external, use ARG_WITH
+// ARG_WITH("converter", "for converter support", "no");
+
+// Otherwise, use ARG_ENABLE
+// ARG_ENABLE("converter", "enable converter support", "no");
+
+if (PHP_CONVERTER != "no") {
+	EXTENSION("converter", "converter.c");
+}
+
