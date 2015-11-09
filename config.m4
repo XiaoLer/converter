@@ -7,9 +7,9 @@ dnl without editing.
 
 dnl If your extension references something external, use with:
 
-dnl PHP_ARG_WITH(converter, for converter support,
+PHP_ARG_WITH(converter, for converter support,
 dnl Make sure that the comment is aligned:
-dnl [  --with-converter             Include converter support])
+[  --with-converter             Include converter support])
 
 dnl Otherwise use enable:
 
@@ -45,7 +45,7 @@ if test "$PHP_CONVERTER" != "no"; then
 
   dnl # --with-converter -> check for lib and symbol presence
   dnl LIBNAME=converter # you may want to change this
-  dnl LIBSYMBOL=converter # you most likely want to change this 
+  dnl LIBSYMBOL=converter # you most likely want to change this
 
   dnl PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
   dnl [
