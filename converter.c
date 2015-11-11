@@ -1,6 +1,6 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
+  | PHP Output Converter                                                 |
   +----------------------------------------------------------------------+
   | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: Scholer Liu <scholer_l@live.com>                             |
   +----------------------------------------------------------------------+
 */
 
@@ -25,6 +25,8 @@
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
+#include "ext/standard/php_string.h"
+
 #include "php_converter.h"
 
 /* If you declare any globals in php_converter.h uncomment this:
@@ -34,12 +36,20 @@ ZEND_DECLARE_MODULE_GLOBALS(converter)
 /* True global resources - no need for thread safety here */
 static int le_converter;
 
+
+/* {{{ arginfo */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_str_convert, 0, 0, 0)
+	ZEND_ARG_INFO(0, string)
+ZEND_END_ARG_INFO()
+/* }}} */
+
+
 /* {{{ converter_functions[]
  *
  * Every user visible function must have an entry in converter_functions[].
  */
 const zend_function_entry converter_functions[] = {
-	PHP_FE(confirm_converter_compiled,	NULL)		/* For testing, remove later. */
+	PHP_FE(str_convert, arginfo_str_convert)		/* For testing, remove later. */
 	PHP_FE_END	/* Must be the last line in converter_functions[] */
 };
 /* }}} */
@@ -70,32 +80,26 @@ ZEND_GET_MODULE(converter)
 
 /* {{{ PHP_INI
  */
-/* Remove comments and fill if you need to have entries in php.ini
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("converter.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_converter_globals, converter_globals)
-    STD_PHP_INI_ENTRY("converter.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_converter_globals, converter_globals)
+    STD_PHP_INI_ENTRY("converter.enabled",   "1", PHP_INI_ALL, OnUpdateLong, global_value, zend_converter_globals, converter_globals)
+    STD_PHP_INI_ENTRY("converter.dictionary", "", PHP_INI_ALL, OnUpdateString, global_string, zend_converter_globals, converter_globals)
 PHP_INI_END()
-*/
 /* }}} */
 
 /* {{{ php_converter_init_globals
  */
-/* Uncomment this function if you have INI entries
 static void php_converter_init_globals(zend_converter_globals *converter_globals)
 {
-	converter_globals->global_value = 0;
-	converter_globals->global_string = NULL;
+	converter_globals->enabled	  = 0;
+	converter_globals->dictionary = NULL;
 }
-*/
 /* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(converter)
 {
-	/* If you have INI entries, uncomment these lines
 	REGISTER_INI_ENTRIES();
-	*/
 	return SUCCESS;
 }
 /* }}} */
@@ -104,9 +108,7 @@ PHP_MINIT_FUNCTION(converter)
  */
 PHP_MSHUTDOWN_FUNCTION(converter)
 {
-	/* uncomment this line if you have INI entries
 	UNREGISTER_INI_ENTRIES();
-	*/
 	return SUCCESS;
 }
 /* }}} */
@@ -137,39 +139,24 @@ PHP_MINFO_FUNCTION(converter)
 	php_info_print_table_header(2, "converter support", "enabled");
 	php_info_print_table_end();
 
-	/* Remove comments if you have entries in php.ini
 	DISPLAY_INI_ENTRIES();
-	*/
 }
 /* }}} */
 
-
-/* Remove the following function when you have successfully modified config.m4
-   so that your module can be compiled into PHP, it exists only for testing
-   purposes. */
-
-/* Every user-visible function in PHP should document itself in the source */
-/* {{{ proto string confirm_converter_compiled(string arg)
-   Return a string to confirm that the module is compiled in */
-PHP_FUNCTION(confirm_converter_compiled)
+/* string convert */
+PHP_FUNCTION(str_convert) /* {{{ */
 {
-	char *arg = NULL;
-	int arg_len, len;
-	char *strg;
+	char *string = NULL;
+	int str_len;
+	char *converted;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &string, &str_len) == FAILURE) {
 		return;
 	}
 
-	len = spprintf(&strg, 0, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "converter", arg);
-	RETURN_STRINGL(strg, len, 0);
+	// RETURN_STRING(converted, 0);
 }
 /* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and
-   unfold functions in source code. See the corresponding marks just before
-   function definition, where the functions purpose is also documented. Please
-   follow this convention for the convenience of others editing your code.
-*/
 
 
 /*
