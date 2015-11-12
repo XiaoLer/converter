@@ -117,9 +117,8 @@ PHP_MSHUTDOWN_FUNCTION(converter)
  */
 PHP_RINIT_FUNCTION(converter)
 {
-	char *line = NULL;
 	char *delim = "|";
-	zval zdelim, zstr, *return_value;
+	zval zdelim, zstr;
 
 	php_stream *stream;
 
@@ -134,10 +133,10 @@ PHP_RINIT_FUNCTION(converter)
 	ZVAL_STRINGL(&zdelim, delim, strlen(delim), 0);
 
 	while (!php_stream_eof(stream)) {
-		if (line) {
-			efree(line);
-			line = NULL;
-		}
+		char *line = NULL;
+		void *search_unit, *replace_unit;
+		zval *splited;
+
 		line = php_stream_gets(stream, NULL, 1024);
 
 		if (line == '\0') {
@@ -145,9 +144,21 @@ PHP_RINIT_FUNCTION(converter)
 		}
 
 		ZVAL_STRINGL(&zstr, line, strlen(line), 0);
-		array_init(return_value);
-		php_explode(&zdelim, &zstr, return_value, LONG_MAX);
+		efree(line);
+
+		array_init(splited);
+		php_explode(&zdelim, &zstr, splited, LONG_MAX);
+
+		if (zend_hash_index_find(Z_ARRVAL_P(splited), 0, &search_unit) == SUCCESS
+			&& zend_hash_index_find(Z_ARRVAL_P(splited), 1, &replace_unit) == SUCCESS)
+		{
+			add_next_index_string(CONVERTER_G(search), search_unit, 0);
+			add_next_index_string(CONVERTER_G(replace), replace_unit, 0);
+		}
+		efree(splited);
 	}
+
+	php_stream_close(stream);
 
 	return SUCCESS;
 }
