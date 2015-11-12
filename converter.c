@@ -80,8 +80,8 @@ ZEND_GET_MODULE(converter)
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("converter.enable",    "1", PHP_INI_ALL, OnUpdateLong, enable, zend_converter_globals, converter_globals)
-    STD_PHP_INI_ENTRY("converter.dictionary", "", PHP_INI_ALL, OnUpdateString, dictionary, zend_converter_globals, converter_globals)
+    STD_PHP_INI_ENTRY("converter.auto_convert", "1", PHP_INI_ALL, OnUpdateLong, auto_convert, zend_converter_globals, converter_globals)
+    STD_PHP_INI_ENTRY("converter.dictionary",    "", PHP_INI_ALL, OnUpdateString, dictionary, zend_converter_globals, converter_globals)
 PHP_INI_END()
 /* }}} */
 
@@ -89,8 +89,8 @@ PHP_INI_END()
  */
 static void php_converter_init_globals(zend_converter_globals *converter_globals)
 {
-	converter_globals->enable	  = 0;
-	converter_globals->dictionary = NULL;
+	converter_globals->auto_convert = 0;
+	converter_globals->dictionary   = NULL;
 }
 /* }}} */
 
@@ -117,15 +117,37 @@ PHP_MSHUTDOWN_FUNCTION(converter)
  */
 PHP_RINIT_FUNCTION(converter)
 {
+	char *line = NULL;
+	char *delim = "|";
+	zval zdelim, zstr, *return_value;
+
+	php_stream *stream;
+
 	array_init(CONVERTER_G(search));
 	array_init(CONVERTER_G(replace));
 
-	FILE *fp;
-	if ((fp = fopen(CONVERTER_G(dictionary, "r")) == NULL) {
+	stream = php_stream_open_wrapper(CONVERTER_G(dictionary), "r", USE_PATH, NULL);
+	if (!stream) {
 		php_error(E_ERROR, "Can no read file.\n");
-		return 0;
 	}
 
+	ZVAL_STRINGL(&zdelim, delim, strlen(delim), 0);
+
+	while (!php_stream_eof(stream)) {
+		if (line) {
+			efree(line);
+			line = NULL;
+		}
+		line = php_stream_gets(stream, NULL, 1024);
+
+		if (line == '\0') {
+			continue;
+		}
+
+		ZVAL_STRINGL(&zstr, line, strlen(line), 0);
+		array_init(return_value);
+		php_explode(&zdelim, &zstr, return_value, LONG_MAX);
+	}
 
 	return SUCCESS;
 }
