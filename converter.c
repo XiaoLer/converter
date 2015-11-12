@@ -24,14 +24,13 @@
 
 #include "php.h"
 #include "php_ini.h"
+#include "main/php_streams.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
 
 #include "php_converter.h"
 
-/* If you declare any globals in php_converter.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(converter)
-*/
 
 /* True global resources - no need for thread safety here */
 static int le_converter;
@@ -81,8 +80,8 @@ ZEND_GET_MODULE(converter)
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("converter.enabled",   "1", PHP_INI_ALL, OnUpdateLong, global_value, zend_converter_globals, converter_globals)
-    STD_PHP_INI_ENTRY("converter.dictionary", "", PHP_INI_ALL, OnUpdateString, global_string, zend_converter_globals, converter_globals)
+    STD_PHP_INI_ENTRY("converter.enable",    "1", PHP_INI_ALL, OnUpdateLong, enable, zend_converter_globals, converter_globals)
+    STD_PHP_INI_ENTRY("converter.dictionary", "", PHP_INI_ALL, OnUpdateString, dictionary, zend_converter_globals, converter_globals)
 PHP_INI_END()
 /* }}} */
 
@@ -90,7 +89,7 @@ PHP_INI_END()
  */
 static void php_converter_init_globals(zend_converter_globals *converter_globals)
 {
-	converter_globals->enabled	  = 0;
+	converter_globals->enable	  = 0;
 	converter_globals->dictionary = NULL;
 }
 /* }}} */
@@ -118,6 +117,16 @@ PHP_MSHUTDOWN_FUNCTION(converter)
  */
 PHP_RINIT_FUNCTION(converter)
 {
+	array_init(CONVERTER_G(search));
+	array_init(CONVERTER_G(replace));
+
+	FILE *fp;
+	if ((fp = fopen(CONVERTER_G(dictionary, "r")) == NULL) {
+		php_error(E_ERROR, "Can no read file.\n");
+		return 0;
+	}
+
+
 	return SUCCESS;
 }
 /* }}} */

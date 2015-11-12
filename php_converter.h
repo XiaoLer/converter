@@ -46,15 +46,14 @@ PHP_MINFO_FUNCTION(converter);
 
 PHP_FUNCTION(str_convert);
 
-/*
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:
 
 ZEND_BEGIN_MODULE_GLOBALS(converter)
-	long  global_value;
-	char *global_string;
+    char *dictionary;
+    long *enable;
+
+    zval *search;
+    zval *replace;
 ZEND_END_MODULE_GLOBALS(converter)
-*/
 
 /* In every utility function you add that needs to use variables
    in php_converter_globals, call TSRMLS_FETCH(); after declaring other
