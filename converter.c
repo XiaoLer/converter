@@ -24,7 +24,6 @@
 
 #include "php.h"
 #include "php_ini.h"
-#include "main/php_streams.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
 
@@ -130,12 +129,12 @@ PHP_RINIT_FUNCTION(converter)
 		php_error(E_ERROR, "Can no read file.\n");
 	}
 
-	ZVAL_STRINGL(&zdelim, delim, strlen(delim), 0);
+	ZVAL_STRING(&zdelim, delim, 0);
 
 	while (!php_stream_eof(stream)) {
 		char *line = NULL;
-		void *search_unit, *replace_unit;
 		zval *splited;
+		void *search_entry, *replace_entry;
 
 		line = php_stream_gets(stream, NULL, 1024);
 
@@ -143,17 +142,17 @@ PHP_RINIT_FUNCTION(converter)
 			continue;
 		}
 
-		ZVAL_STRINGL(&zstr, line, strlen(line), 0);
+		ZVAL_STRING(&zstr, line, 0);
 		efree(line);
 
 		array_init(splited);
 		php_explode(&zdelim, &zstr, splited, LONG_MAX);
 
-		if (zend_hash_index_find(Z_ARRVAL_P(splited), 0, &search_unit) == SUCCESS
-			&& zend_hash_index_find(Z_ARRVAL_P(splited), 1, &replace_unit) == SUCCESS)
+		if (zend_hash_index_find(Z_ARRVAL_P(splited), 0, &search_entry) == SUCCESS
+			&& zend_hash_index_find(Z_ARRVAL_P(splited), 1, &replace_entry) == SUCCESS)
 		{
-			add_next_index_string(CONVERTER_G(search), search_unit, 0);
-			add_next_index_string(CONVERTER_G(replace), replace_unit, 0);
+			add_next_index_string(CONVERTER_G(search), search_entry, 0);
+			add_next_index_string(CONVERTER_G(replace), replace_entry, 0);
 		}
 		efree(splited);
 	}
@@ -190,16 +189,40 @@ PHP_FUNCTION(str_convert) /* {{{ */
 {
 	char *string = NULL;
 	int str_len;
-	char *converted;
+	zval *zstring;
+
+	zval *params[3] = {0};
+	zval function = {{0}, 0};
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &string, &str_len) == FAILURE) {
 		return;
 	}
 
-	// RETURN_STRING(converted, 0);
+	ZVAL_STRING(zstring, string, 0);
+
+	params[0] = CONVERTER_G(search);
+	params[1] = CONVERTER_G(replace);
+	params[2] = zstring;
+
+	ZVAL_STRING(&function, "str_replace", 0);
+
+	if (call_user_function(EG(function_table), NULL, &function, return_value, ZEND_NUM_ARGS(), params TSRMLS_CC) == FAILURE) {
+		if (return_value) {
+			zval_dtor(return_value);
+		}
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Call to str_replace failed");
+		RETURN_FALSE;
+	}
+
+	if (Z_TYPE_P(return_value) == IS_STRING) {
+		zval_dtor(return_value);
+		RETURN_STRING(Z_STRVAL_P(return_value), 0);
+	} else {
+		RETURN_STRING(string, 0);
+	}
+
 }
 /* }}} */
-
 
 /*
  * Local variables:
