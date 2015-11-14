@@ -159,8 +159,8 @@ PHP_RINIT_FUNCTION(converter)
 			SEPARATE_ZVAL(search_entry);
 			SEPARATE_ZVAL(replace_entry);
 
-			add_next_index_string(CONVERTER_G(search), Z_STRVAL_PP(search_entry), 1);
-			add_next_index_string(CONVERTER_G(replace), Z_STRVAL_PP(replace_entry), 1);
+			add_next_index_string(CONVERTER_G(search), Z_STRVAL_PP(search_entry), 0);
+			add_next_index_string(CONVERTER_G(replace), Z_STRVAL_PP(replace_entry), 0);
 		}
 
 		efree(splited);
