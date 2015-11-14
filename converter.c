@@ -118,23 +118,26 @@ PHP_RINIT_FUNCTION(converter)
 {
 	char *delim = "|";
 	zval zdelim, zstr;
-
 	php_stream *stream;
+
+	MAKE_STD_ZVAL(CONVERTER_G(search));
+	MAKE_STD_ZVAL(CONVERTER_G(replace));
 
 	array_init(CONVERTER_G(search));
 	array_init(CONVERTER_G(replace));
 
 	stream = php_stream_open_wrapper(CONVERTER_G(dictionary), "r", USE_PATH, NULL);
 	if (!stream) {
-		php_error(E_ERROR, "Can no read file.\n");
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can no read file");
 	}
 
-	ZVAL_STRING(&zdelim, delim, 0);
+	ZVAL_STRINGL(&zdelim, delim, strlen(delim), 1);
 
 	while (!php_stream_eof(stream)) {
 		char *line = NULL;
 		zval *splited;
-		void *search_entry, *replace_entry;
+
+		zval **search_entry, **replace_entry;
 
 		line = php_stream_gets(stream, NULL, 1024);
 
@@ -142,23 +145,28 @@ PHP_RINIT_FUNCTION(converter)
 			continue;
 		}
 
-		ZVAL_STRING(&zstr, line, 0);
+		ZVAL_STRINGL(&zstr, line, strlen(line) - 1, 1);
 		efree(line);
 
+		MAKE_STD_ZVAL(splited);
 		array_init(splited);
+
 		php_explode(&zdelim, &zstr, splited, LONG_MAX);
 
-		if (zend_hash_index_find(Z_ARRVAL_P(splited), 0, &search_entry) == SUCCESS
-			&& zend_hash_index_find(Z_ARRVAL_P(splited), 1, &replace_entry) == SUCCESS)
+		if (zend_hash_index_find(Z_ARRVAL_P(splited), 0, (void *)&search_entry) == SUCCESS
+			&& zend_hash_index_find(Z_ARRVAL_P(splited), 1, (void *)&replace_entry) == SUCCESS)
 		{
-			add_next_index_string(CONVERTER_G(search), search_entry, 0);
-			add_next_index_string(CONVERTER_G(replace), replace_entry, 0);
+			SEPARATE_ZVAL(search_entry);
+			SEPARATE_ZVAL(replace_entry);
+
+			add_next_index_string(CONVERTER_G(search), Z_STRVAL_PP(search_entry), 1);
+			add_next_index_string(CONVERTER_G(replace), Z_STRVAL_PP(replace_entry), 1);
 		}
+
 		efree(splited);
 	}
 
 	php_stream_close(stream);
-
 	return SUCCESS;
 }
 /* }}} */
@@ -198,6 +206,7 @@ PHP_FUNCTION(str_convert) /* {{{ */
 		return;
 	}
 
+	MAKE_STD_ZVAL(zstring);
 	ZVAL_STRING(zstring, string, 0);
 
 	params[0] = CONVERTER_G(search);
@@ -206,7 +215,7 @@ PHP_FUNCTION(str_convert) /* {{{ */
 
 	ZVAL_STRING(&function, "str_replace", 0);
 
-	if (call_user_function(EG(function_table), NULL, &function, return_value, ZEND_NUM_ARGS(), params TSRMLS_CC) == FAILURE) {
+	if (call_user_function(EG(function_table), NULL, &function, return_value, 3, params TSRMLS_CC) == FAILURE) {
 		if (return_value) {
 			zval_dtor(return_value);
 		}
@@ -215,10 +224,9 @@ PHP_FUNCTION(str_convert) /* {{{ */
 	}
 
 	if (Z_TYPE_P(return_value) == IS_STRING) {
-		zval_dtor(return_value);
-		RETURN_STRING(Z_STRVAL_P(return_value), 0);
+		RETURN_STRING(Z_STRVAL_P(return_value), 1);
 	} else {
-		RETURN_STRING(string, 0);
+		RETURN_STRING(string, 1);
 	}
 
 }
