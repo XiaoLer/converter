@@ -134,19 +134,21 @@ PHP_RINIT_FUNCTION(converter)
 	ZVAL_STRINGL(&zdelim, delim, strlen(delim), 1);
 
 	while (!php_stream_eof(stream)) {
-		char *line = NULL;
+		char *line = NULL, *line_trimed = NULL;
 		zval *splited;
 
 		zval **search_entry, **replace_entry;
 
 		line = php_stream_gets(stream, NULL, 1024);
+		line_trimed = php_trim(line, strlen(line), NULL, 0, NULL, 2 TSRMLS_DC);
+		efree(line);
 
-		if (line == '\0') {
+		if (!line_trimed) {
 			continue;
 		}
 
-		ZVAL_STRINGL(&zstr, line, strlen(line) - 1, 1);
-		efree(line);
+		ZVAL_STRING(&zstr, line_trimed, 1);
+		efree(line_trimed);
 
 		MAKE_STD_ZVAL(splited);
 		array_init(splited);
