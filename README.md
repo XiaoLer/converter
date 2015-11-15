@@ -1,5 +1,5 @@
 # converter
-PHP output filter, character replace
+PHP output filter, character replace.
 
 PHP 扩展编写学习项目，目前还处于完善阶段。
 

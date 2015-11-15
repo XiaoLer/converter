@@ -192,19 +192,35 @@ PHP_MINFO_FUNCTION(converter)
 }
 /* }}} */
 
-/* string convert */
+/* function string convert */
 PHP_FUNCTION(str_convert) /* {{{ */
 {
 	char *string = NULL;
 	int str_len;
-	zval *zstring;
-
-	zval *params[3] = {0};
-	zval function = {{0}, 0};
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &string, &str_len) == FAILURE) {
 		return;
 	}
+
+	if (conveter_str_convert(string, return_value) == FAILURE) {
+		RETURN_STRING(string, 1);
+	}
+
+	if (Z_TYPE_P(return_value) == IS_STRING) {
+		RETURN_STRING(Z_STRVAL_P(return_value), 1);
+	} else {
+		RETURN_STRING(string, 1);
+	}
+}
+/* }}} */
+
+/* convert string */
+int conveter_str_convert(char *string, zval *str_converted) /* {{{ */
+{
+	zval *zstring;
+	zval *params[3] = {0};
+
+	zval function = {{0}, 0};
 
 	MAKE_STD_ZVAL(zstring);
 	ZVAL_STRING(zstring, string, 0);
@@ -215,20 +231,15 @@ PHP_FUNCTION(str_convert) /* {{{ */
 
 	ZVAL_STRING(&function, "str_replace", 0);
 
-	if (call_user_function(EG(function_table), NULL, &function, return_value, 3, params TSRMLS_CC) == FAILURE) {
-		if (return_value) {
-			zval_dtor(return_value);
+	if (call_user_function(EG(function_table), NULL, &function, str_converted, 3, params TSRMLS_CC) == FAILURE) {
+		if (str_converted) {
+			zval_dtor(str_converted);
 		}
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Call to str_replace failed");
-		RETURN_FALSE;
+		return FAILURE;
 	}
 
-	if (Z_TYPE_P(return_value) == IS_STRING) {
-		RETURN_STRING(Z_STRVAL_P(return_value), 1);
-	} else {
-		RETURN_STRING(string, 1);
-	}
-
+	return SUCCESS;
 }
 /* }}} */
 

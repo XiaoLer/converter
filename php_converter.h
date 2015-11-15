@@ -71,6 +71,8 @@ ZEND_END_MODULE_GLOBALS(converter)
 #define CONVERTER_G(v) (converter_globals.v)
 #endif
 
+int conveter_str_convert(char *string, zval *str_converted);
+
 #endif	/* PHP_CONVERTER_H */
 
 
