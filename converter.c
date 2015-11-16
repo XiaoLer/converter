@@ -36,7 +36,7 @@ static int le_converter;
 
 
 /* {{{ arginfo */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_str_convert, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_str_convert, 0, 0, 1)
 	ZEND_ARG_INFO(0, string)
 ZEND_END_ARG_INFO()
 /* }}} */
@@ -111,7 +111,6 @@ PHP_MSHUTDOWN_FUNCTION(converter)
 }
 /* }}} */
 
-/* Remove if there's nothing to do at request start */
 /* {{{ PHP_RINIT_FUNCTION
  */
 PHP_RINIT_FUNCTION(converter)
@@ -173,7 +172,6 @@ PHP_RINIT_FUNCTION(converter)
 }
 /* }}} */
 
-/* Remove if there's nothing to do at request end */
 /* {{{ PHP_RSHUTDOWN_FUNCTION
  */
 PHP_RSHUTDOWN_FUNCTION(converter)
@@ -199,12 +197,16 @@ PHP_FUNCTION(str_convert) /* {{{ */
 {
 	char *string = NULL;
 	int str_len;
+	zval *zstring;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &string, &str_len) == FAILURE) {
 		return;
 	}
 
-	if (conveter_str_convert(string, return_value) == FAILURE) {
+	MAKE_STD_ZVAL(zstring);
+	ZVAL_STRING(zstring, string, 0);
+
+	if (conveter_str_convert(zstring, return_value TSRMLS_CC) == FAILURE) {
 		RETURN_STRING(string, 1);
 	}
 
@@ -217,15 +219,10 @@ PHP_FUNCTION(str_convert) /* {{{ */
 /* }}} */
 
 /* convert string */
-int conveter_str_convert(char *string, zval *str_converted) /* {{{ */
+int conveter_str_convert(zval *zstring, zval *str_converted TSRMLS_DC) /* {{{ */
 {
-	zval *zstring;
 	zval *params[3] = {0};
-
 	zval function = {{0}, 0};
-
-	MAKE_STD_ZVAL(zstring);
-	ZVAL_STRING(zstring, string, 0);
 
 	params[0] = CONVERTER_G(search);
 	params[1] = CONVERTER_G(replace);

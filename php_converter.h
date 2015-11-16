@@ -1,6 +1,6 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
+  | PHP Output Converter                                                 |
   +----------------------------------------------------------------------+
   | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: Scholer Liu <scholer_l@live.com>                             |
   +----------------------------------------------------------------------+
 */
 
@@ -27,11 +27,11 @@ extern zend_module_entry converter_module_entry;
 #define PHP_CONVERTER_VERSION "0.1.0" /* Replace with version number for your extension */
 
 #ifdef PHP_WIN32
-#	define PHP_CONVERTER_API __declspec(dllexport)
+# define PHP_CONVERTER_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_CONVERTER_API __attribute__ ((visibility("default")))
+# define PHP_CONVERTER_API __attribute__ ((visibility("default")))
 #else
-#	define PHP_CONVERTER_API
+# define PHP_CONVERTER_API
 #endif
 
 #ifdef ZTS
@@ -71,9 +71,10 @@ ZEND_END_MODULE_GLOBALS(converter)
 #define CONVERTER_G(v) (converter_globals.v)
 #endif
 
-int conveter_str_convert(char *string, zval *str_converted);
 
-#endif	/* PHP_CONVERTER_H */
+int conveter_str_convert(zval *zstring, zval *str_converted);
+
+#endif  /* PHP_CONVERTER_H */
 
 
 /*
