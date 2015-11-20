@@ -76,6 +76,9 @@ zend_module_entry converter_module_entry = {
 ZEND_GET_MODULE(converter)
 #endif
 
+static int converter_dictionary_load(TSRMLS_D);
+static int conveter_str_convert(zval *zstring, zval *str_converted TSRMLS_DC);
+
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
@@ -115,6 +118,40 @@ PHP_MSHUTDOWN_FUNCTION(converter)
  */
 PHP_RINIT_FUNCTION(converter)
 {
+	if (converter_dictionary_load(TSRMLS_C) != SUCCESS) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can not read dictionary file.");
+	}
+	return SUCCESS;
+}
+/* }}} */
+
+/* {{{ PHP_RSHUTDOWN_FUNCTION
+ */
+PHP_RSHUTDOWN_FUNCTION(converter)
+{
+	efree(CONVERTER_G(search));
+	efree(CONVERTER_G(replace));
+
+	return SUCCESS;
+}
+/* }}} */
+
+/* {{{ PHP_MINFO_FUNCTION
+ */
+PHP_MINFO_FUNCTION(converter)
+{
+	php_info_print_table_start();
+	php_info_print_table_header(2, "converter support", "enabled");
+	php_info_print_table_end();
+
+	DISPLAY_INI_ENTRIES();
+}
+/* }}} */
+
+/* {{{ int converter_dictionary_load(TSRMLS_D)
+ * load dictonary and parsing */
+static int converter_dictionary_load(TSRMLS_D)
+{
 	char *delim = "|";
 	zval zdelim, zstr;
 	php_stream *stream;
@@ -127,7 +164,7 @@ PHP_RINIT_FUNCTION(converter)
 
 	stream = php_stream_open_wrapper(CONVERTER_G(dictionary), "r", USE_PATH, NULL);
 	if (!stream) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can no read file");
+		return FAILURE;
 	}
 
 	ZVAL_STRINGL(&zdelim, delim, strlen(delim), 1);
@@ -172,28 +209,9 @@ PHP_RINIT_FUNCTION(converter)
 }
 /* }}} */
 
-/* {{{ PHP_RSHUTDOWN_FUNCTION
- */
-PHP_RSHUTDOWN_FUNCTION(converter)
-{
-	return SUCCESS;
-}
-/* }}} */
-
-/* {{{ PHP_MINFO_FUNCTION
- */
-PHP_MINFO_FUNCTION(converter)
-{
-	php_info_print_table_start();
-	php_info_print_table_header(2, "converter support", "enabled");
-	php_info_print_table_end();
-
-	DISPLAY_INI_ENTRIES();
-}
-/* }}} */
-
-/* function string convert */
-PHP_FUNCTION(str_convert) /* {{{ */
+/* {{{ PHP_FUNCTION(str_convert)
+ * function string convert */
+PHP_FUNCTION(str_convert)
 {
 	char *string = NULL;
 	int str_len;
@@ -218,8 +236,9 @@ PHP_FUNCTION(str_convert) /* {{{ */
 }
 /* }}} */
 
-/* convert string */
-int conveter_str_convert(zval *zstring, zval *str_converted TSRMLS_DC) /* {{{ */
+/* {{{ int conveter_str_convert
+ * convert string */
+static int conveter_str_convert(zval *zstring, zval *str_converted TSRMLS_DC)
 {
 	zval *params[3] = {0};
 	zval function = {{0}, 0};
