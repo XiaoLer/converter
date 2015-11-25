@@ -24,6 +24,7 @@
 
 #include "php.h"
 #include "php_ini.h"
+#include "main/php_output.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
 
@@ -77,7 +78,8 @@ ZEND_GET_MODULE(converter)
 #endif
 
 static int converter_dictionary_load(TSRMLS_D);
-static int conveter_str_convert(zval *zstring, zval *str_converted TSRMLS_DC);
+static int conveter_str_convert(char *string, zval *str_converted TSRMLS_DC);
+static int converter_output_handler(void **handler_context, php_output_context *output_context);
 
 /* {{{ PHP_INI
  */
@@ -118,9 +120,22 @@ PHP_MSHUTDOWN_FUNCTION(converter)
  */
 PHP_RINIT_FUNCTION(converter)
 {
+	php_output_handler *handler;
+	const char conveter_handler[] = "converter handler";
+
 	if (converter_dictionary_load(TSRMLS_C) != SUCCESS) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can not read dictionary file.");
 	}
+
+	if (CONVERTER_G(auto_convert) == 1) {
+		handler = php_output_handler_create_internal(ZEND_STRL(conveter_handler), converter_output_handler, 0, PHP_OUTPUT_HANDLER_STDFLAGS TSRMLS_CC);
+		if (SUCCESS == php_output_handler_start(handler TSRMLS_CC)) {
+			return SUCCESS;
+		}
+		php_output_handler_free(&handler TSRMLS_CC);
+		return FAILURE;
+	}
+
 	return SUCCESS;
 }
 /* }}} */
@@ -147,6 +162,21 @@ PHP_MINFO_FUNCTION(converter)
 	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
+
+static int converter_output_handler(void **handler_context, php_output_context *output_context)
+{
+	zval *str_converted = NULL;
+
+	MAKE_STD_ZVAL(str_converted);
+
+	if(SUCCESS == conveter_str_convert(output_context->in.data, str_converted TSRMLS_DC)) {
+		output_context->out.data = estrndup(Z_STRVAL_P(str_converted), Z_STRLEN_P(str_converted));
+		output_context->out.used = Z_STRLEN_P(str_converted);
+		output_context->out.free = 1;
+	}
+
+	return SUCCESS;
+}
 
 /* {{{ int converter_dictionary_load(TSRMLS_D)
  * load dictonary and parsing */
@@ -176,12 +206,11 @@ static int converter_dictionary_load(TSRMLS_D)
 		zval **search_entry, **replace_entry;
 
 		line = php_stream_gets(stream, NULL, 1024);
-		line_trimed = php_trim(line, strlen(line), NULL, 0, NULL, 2 TSRMLS_DC);
-		efree(line);
-
-		if (!line_trimed) {
+		if (line == NULL) {
 			continue;
 		}
+		line_trimed = php_trim(line, strlen(line), NULL, 0, NULL, 2 TSRMLS_DC);
+		efree(line);
 
 		ZVAL_STRING(&zstr, line_trimed, 1);
 		efree(line_trimed);
@@ -215,16 +244,12 @@ PHP_FUNCTION(str_convert)
 {
 	char *string = NULL;
 	int str_len;
-	zval *zstring;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &string, &str_len) == FAILURE) {
 		return;
 	}
 
-	MAKE_STD_ZVAL(zstring);
-	ZVAL_STRING(zstring, string, 0);
-
-	if (conveter_str_convert(zstring, return_value TSRMLS_CC) == FAILURE) {
+	if (conveter_str_convert(string, return_value TSRMLS_CC) == FAILURE) {
 		RETURN_STRING(string, 1);
 	}
 
@@ -238,10 +263,15 @@ PHP_FUNCTION(str_convert)
 
 /* {{{ int conveter_str_convert
  * convert string */
-static int conveter_str_convert(zval *zstring, zval *str_converted TSRMLS_DC)
+static int conveter_str_convert(char *string, zval *str_converted TSRMLS_DC)
 {
+	zval *zstring;
+
 	zval *params[3] = {0};
 	zval function = {{0}, 0};
+
+	MAKE_STD_ZVAL(zstring);
+	ZVAL_STRING(zstring, string, 0);
 
 	params[0] = CONVERTER_G(search);
 	params[1] = CONVERTER_G(replace);

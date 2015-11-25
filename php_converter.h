@@ -49,7 +49,7 @@ PHP_FUNCTION(str_convert);
 
 ZEND_BEGIN_MODULE_GLOBALS(converter)
     char *dictionary;
-    long *auto_convert;
+    long auto_convert;
 
     zval *search;
     zval *replace;
