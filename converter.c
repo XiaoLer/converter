@@ -175,7 +175,7 @@ static int converter_output_handler(void **handler_context, php_output_context *
 		output_context->out.free = 1;
 	}
 
-	efree(str_converted);
+	zval_dtor(str_converted);
 
 	return SUCCESS;
 }
