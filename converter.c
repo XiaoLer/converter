@@ -144,8 +144,8 @@ PHP_RINIT_FUNCTION(converter)
  */
 PHP_RSHUTDOWN_FUNCTION(converter)
 {
-	efree(CONVERTER_G(search));
-	efree(CONVERTER_G(replace));
+	zval_ptr_dtor(&CONVERTER_G(search));
+	zval_ptr_dtor(&CONVERTER_G(replace));
 
 	return SUCCESS;
 }
@@ -167,13 +167,17 @@ static int converter_output_handler(void **handler_context, php_output_context *
 {
 	zval *str_converted = NULL;
 
+	if (output_context->in.used == 0) {
+		return SUCCESS;
+	}
+
 	MAKE_STD_ZVAL(str_converted);
 
 	if(SUCCESS == conveter_str_convert(output_context->in.data, str_converted TSRMLS_DC)) {
-		output_context->out.data = estrndup(Z_STRVAL_P(str_converted), Z_STRLEN_P(str_converted));
-		output_context->out.used = Z_STRLEN_P(str_converted);
-		output_context->out.free = 1;
-	}
+			output_context->out.data = estrndup(Z_STRVAL_P(str_converted), Z_STRLEN_P(str_converted));
+			output_context->out.used = Z_STRLEN_P(str_converted);
+			output_context->out.free = 1;
+		}
 
 	zval_dtor(str_converted);
 
@@ -271,6 +275,10 @@ static int conveter_str_convert(char *string, zval *str_converted TSRMLS_DC)
 
 	zval *params[3] = {0};
 	zval function = {{0}, 0};
+
+	if (strlen(string) == 0) {
+		return SUCCESS;
+	}
 
 	MAKE_STD_ZVAL(zstring);
 	ZVAL_STRING(zstring, string, 0);
