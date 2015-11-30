@@ -1,8 +1,6 @@
 # converter
 PHP output filter, character replace.
 
-PHP 扩展编写学习项目，目前还处于完善阶段。
-
 Schedule:
 
 1. 实现一个函数对输入进行替换 ✔
