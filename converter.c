@@ -125,6 +125,7 @@ PHP_RINIT_FUNCTION(converter)
 
 	if (converter_dictionary_load(TSRMLS_C) != SUCCESS) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can not read dictionary file.");
+		return FAILURE;
 	}
 
 	if (CONVERTER_G(auto_convert) == 1) {
@@ -174,10 +175,10 @@ static int converter_output_handler(void **handler_context, php_output_context *
 	MAKE_STD_ZVAL(str_converted);
 
 	if(SUCCESS == conveter_str_convert(output_context->in.data, str_converted TSRMLS_DC)) {
-			output_context->out.data = estrndup(Z_STRVAL_P(str_converted), Z_STRLEN_P(str_converted));
-			output_context->out.used = Z_STRLEN_P(str_converted);
-			output_context->out.free = 1;
-		}
+		output_context->out.data = estrndup(Z_STRVAL_P(str_converted), Z_STRLEN_P(str_converted));
+		output_context->out.used = Z_STRLEN_P(str_converted);
+		output_context->out.free = 1;
+	}
 
 	zval_dtor(str_converted);
 
@@ -216,10 +217,7 @@ static int converter_dictionary_load(TSRMLS_D)
 			continue;
 		}
 		line_trimed = php_trim(line, strlen(line), NULL, 0, NULL, 2 TSRMLS_DC);
-		efree(line);
-
 		ZVAL_STRING(&zstr, line_trimed, 1);
-		efree(line_trimed);
 
 		MAKE_STD_ZVAL(splited);
 		array_init(splited);
@@ -271,14 +269,10 @@ PHP_FUNCTION(str_convert)
  * convert string */
 static int conveter_str_convert(char *string, zval *str_converted TSRMLS_DC)
 {
-	zval *zstring;
+	zval *zstring = NULL;
 
 	zval *params[3] = {0};
 	zval function = {{0}, 0};
-
-	if (strlen(string) == 0) {
-		return SUCCESS;
-	}
 
 	MAKE_STD_ZVAL(zstring);
 	ZVAL_STRING(zstring, string, 0);
